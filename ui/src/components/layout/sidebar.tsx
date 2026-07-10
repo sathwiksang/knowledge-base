@@ -227,6 +227,7 @@ function SidebarNav({
             size="icon"
             className="flex-shrink-0 text-muted-foreground hover:text-destructive"
             onClick={handleLogout}
+            aria-label="Log out"
           >
             <LogOut className="w-4 h-4" />
           </Button>

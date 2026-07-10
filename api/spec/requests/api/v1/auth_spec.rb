@@ -73,6 +73,17 @@ RSpec.describe 'Api::V1::Auth', type: :request do
   describe 'POST /api/v1/auth/login' do
     let!(:user) { create(:user, email: 'test@example.com', password: 'password123') }
 
+    context 'with a malformed JSON body' do
+      it 'returns 400, not 500' do
+        post '/api/v1/auth/login',
+             params: '{bad',
+             headers: { 'CONTENT_TYPE' => 'application/json' }
+
+        expect(response).to have_http_status(:bad_request)
+        expect(json_response['error']).to eq('malformed_request')
+      end
+    end
+
     context 'with valid credentials' do
       it 'returns a token' do
         post '/api/v1/auth/login', params: { email: 'test@example.com', password: 'password123' }

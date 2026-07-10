@@ -26,6 +26,7 @@ module ErrorHandler
     # Parameter errors
     rescue_from ActionController::ParameterMissing, with: :handle_parameter_missing
     rescue_from ActionController::BadRequest, with: :handle_bad_request
+    rescue_from ActionDispatch::Http::Parameters::ParseError, with: :handle_parse_error
 
     # ActiveRecord errors
     rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
@@ -100,6 +101,16 @@ module ErrorHandler
     render_error(
       { error: "conflict", message: "Resource already exists" },
       status: :conflict
+    )
+  end
+
+  def handle_parse_error(_error)
+    render_error(
+      {
+        error: "malformed_request",
+        message: "Request body is not valid JSON"
+      },
+      status: :bad_request
     )
   end
 
