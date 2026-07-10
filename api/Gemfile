@@ -1,0 +1,71 @@
+source "https://rubygems.org"
+
+ruby "3.4.8"
+
+# Core Rails
+gem "rails", "~> 8.0"
+gem "pg", "~> 1.5"
+gem "puma", ">= 6.0"
+
+# Background Jobs (Rails 8 default)
+gem "solid_queue"
+
+# Caching
+gem "solid_cache"
+gem "bootsnap", require: false
+
+# Authentication
+gem "bcrypt", "~> 3.1"
+gem "jwt", "~> 2.8"
+
+# API Essentials
+gem "blueprinter", "~> 1.0"
+gem "pagy", "~> 9.0"
+gem "rack-cors"
+gem "rack-attack"
+
+# Vector Search & AI
+gem "neighbor", "~> 0.4"
+gem "httparty", "~> 0.22"
+
+# Utilities
+gem "oj", "~> 3.16"
+gem "ostruct"
+
+# Logging & Monitoring
+gem "lograge", "~> 0.14"
+gem "request_store", "~> 1.7"
+
+# API Documentation
+gem "rswag-api", "~> 2.16"
+gem "rswag-ui", "~> 2.16"
+
+group :development, :test do
+  gem "rswag-specs", "~> 2.16"
+  gem "debug", platforms: %i[mri windows], require: "debug/prelude"
+  gem "rspec-rails", "~> 7.0"
+  gem "factory_bot_rails", "~> 6.4"
+  gem "faker", "~> 3.4"
+  gem "dotenv-rails", "~> 3.1"
+end
+
+group :development do
+  gem "rubocop-rails-omakase", require: false
+  gem "brakeman", require: false
+end
+
+group :test do
+  gem "simplecov", require: false
+  gem "shoulda-matchers", "~> 6.0"
+  gem "database_cleaner-active_record"
+  gem "webmock", "~> 3.23"
+  gem "rspec-benchmark", "~> 0.6"
+  gem "json_matchers", "~> 0.11"
+  gem "parallel_tests", "~> 4.7"
+  gem "test-prof", "~> 1.4"
+end
+
+# Bullet removed - doesn't support Rails 8.1 yet
+# group :development, :test do
+#   gem "bullet", "~> 7.2"
+# end

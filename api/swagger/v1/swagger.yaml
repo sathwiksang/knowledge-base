@@ -1,0 +1,989 @@
+---
+openapi: 3.0.3
+info:
+  title: Knowledge Base API
+  version: v1.0.0
+  description: |
+    AI-powered Knowledge Base API with semantic search and RAG capabilities.
+
+    ## Features
+    - **JWT Authentication**: Secure token-based authentication
+    - **Knowledge Base Management**: Create and manage knowledge bases
+    - **Document Processing**: Upload documents with automatic chunking and embedding generation
+    - **Semantic Search**: Vector similarity search using pgvector
+    - **RAG Q&A**: Retrieval-Augmented Generation for intelligent question answering
+
+    ## Authentication
+    All API endpoints (except auth and health) require a valid JWT token.
+    Include the token in the Authorization header: `Bearer <token>`
+
+    ## Rate Limiting
+    - General API: 100 requests/minute
+    - Authentication: 5 requests/20 seconds
+    - Search: 30 requests/minute
+    - RAG Q&A: 20 requests/minute
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  "/api/v1/auth/register":
+    post:
+      summary: Register a new user
+      tags:
+      - Authentication
+      security: []
+      parameters: []
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User created successfully
+                  user:
+                    "$ref": "#/components/schemas/User"
+                  token:
+                    type: string
+                    description: JWT token
+                  request_id:
+                    type: string
+                    format: uuid
+                required:
+                - message
+                - user
+                - token
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 6
+                  example: password123
+                password_confirmation:
+                  type: string
+                  example: password123
+              required:
+              - email
+              - password
+              - password_confirmation
+  "/api/v1/auth/login":
+    post:
+      summary: Login user
+      tags:
+      - Authentication
+      security: []
+      parameters: []
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Login successful
+                  user:
+                    "$ref": "#/components/schemas/User"
+                  token:
+                    type: string
+                    description: JWT token
+                  request_id:
+                    type: string
+                    format: uuid
+                required:
+                - message
+                - user
+                - token
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Invalid email or password
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  example: password123
+              required:
+              - email
+              - password
+  "/api/v1/auth/logout":
+    delete:
+      summary: Logout user
+      tags:
+      - Authentication
+      security: []
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully
+  "/api/v1/knowledge_bases/{knowledge_base_id}/documents":
+    parameters:
+    - name: knowledge_base_id
+      in: path
+      description: Knowledge base ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: List documents
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Documents retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/Document"
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                      processing:
+                        type: integer
+                      indexed:
+                        type: integer
+                      failed:
+                        type: integer
+                  request_id:
+                    type: string
+                    format: uuid
+    post:
+      summary: Upload document
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      description: Upload a document for processing. Document will be chunked and
+        embeddings generated asynchronously.
+      parameters: []
+      responses:
+        '201':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    "$ref": "#/components/schemas/Document"
+                  message:
+                    type: string
+                    example: Document uploaded successfully. Processing will begin
+                      shortly.
+                  request_id:
+                    type: string
+                    format: uuid
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: Getting Started Guide
+                content:
+                  type: string
+                  example: This guide covers the basics of...
+                metadata:
+                  type: object
+                  description: Optional metadata
+                  additionalProperties: true
+              required:
+              - title
+              - content
+  "/api/v1/documents/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Document ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get document
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Document retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    allOf:
+                    - "$ref": "#/components/schemas/Document"
+                    - type: object
+                      properties:
+                        content:
+                          type: string
+                        metadata:
+                          type: object
+                        chunks_count:
+                          type: integer
+                  request_id:
+                    type: string
+                    format: uuid
+        '404':
+          description: Document not found
+    delete:
+      summary: Delete document
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Document deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Document deleted successfully
+                  request_id:
+                    type: string
+                    format: uuid
+  "/api/v1/documents/{id}/status":
+    parameters:
+    - name: id
+      in: path
+      description: Document ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get document processing status
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      description: Check the processing status of a document
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+                    enum:
+                    - pending
+                    - processing
+                    - indexed
+                    - failed
+                  chunks_count:
+                    type: integer
+                  error:
+                    type: string
+                    nullable: true
+                  updated_at:
+                    type: string
+                    format: date-time
+                  request_id:
+                    type: string
+                    format: uuid
+  "/api/v1/documents/{id}/reprocess":
+    parameters:
+    - name: id
+      in: path
+      description: Document ID
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Reprocess document
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      description: Queue a document for reprocessing (regenerate chunks and embeddings)
+      responses:
+        '200':
+          description: Document queued for reprocessing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    "$ref": "#/components/schemas/Document"
+                  message:
+                    type: string
+                    example: Document queued for reprocessing
+                  request_id:
+                    type: string
+                    format: uuid
+        '422':
+          description: Document is currently processing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/api/v1/knowledge_bases/{knowledge_base_id}/documents/batch_reprocess":
+    parameters:
+    - name: knowledge_base_id
+      in: path
+      description: Knowledge base ID
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Batch reprocess documents
+      tags:
+      - Documents
+      security:
+      - bearerAuth: []
+      description: Queue multiple documents for reprocessing based on status filter
+      parameters: []
+      responses:
+        '200':
+          description: Batch reprocessing queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  knowledge_base_id:
+                    type: integer
+                  statuses:
+                    type: array
+                    items:
+                      type: string
+                  documents_count:
+                    type: integer
+                  request_id:
+                    type: string
+                    format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                statuses:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                    - pending
+                    - processing
+                    - indexed
+                    - failed
+                  default:
+                  - pending
+                  - failed
+                  description: Document statuses to include
+                force:
+                  type: boolean
+                  default: false
+                  description: Force reprocessing even for indexed documents
+  "/api/v1/health":
+    get:
+      summary: Full health check
+      tags:
+      - Health
+      security: []
+      responses:
+        '200':
+          description: System healthy
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HealthStatus"
+        '503':
+          description: System degraded
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/HealthStatus"
+  "/api/v1/health/liveness":
+    get:
+      summary: Liveness probe
+      tags:
+      - Health
+      security: []
+      description: Lightweight liveness check for Kubernetes
+      responses:
+        '200':
+          description: API is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+  "/api/v1/health/readiness":
+    get:
+      summary: Readiness probe
+      tags:
+      - Health
+      security: []
+      description: Readiness check including database connectivity
+      responses:
+        '200':
+          description: API is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  timestamp:
+                    type: string
+                    format: date-time
+  "/api/v1/knowledge_bases":
+    get:
+      summary: List knowledge bases
+      tags:
+      - Knowledge Bases
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Knowledge bases retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  knowledge_bases:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/KnowledgeBase"
+                  request_id:
+                    type: string
+                    format: uuid
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create knowledge base
+      tags:
+      - Knowledge Bases
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '201':
+          description: Knowledge base created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  knowledge_base:
+                    "$ref": "#/components/schemas/KnowledgeBase"
+                  request_id:
+                    type: string
+                    format: uuid
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: My Knowledge Base
+                description:
+                  type: string
+                  example: Documentation for my project
+              required:
+              - name
+  "/api/v1/knowledge_bases/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Knowledge base ID
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get knowledge base
+      tags:
+      - Knowledge Bases
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Knowledge base retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  knowledge_base:
+                    "$ref": "#/components/schemas/KnowledgeBase"
+                  request_id:
+                    type: string
+                    format: uuid
+        '404':
+          description: Not found
+    patch:
+      summary: Update knowledge base
+      tags:
+      - Knowledge Bases
+      security:
+      - bearerAuth: []
+      parameters: []
+      responses:
+        '200':
+          description: Knowledge base updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+    delete:
+      summary: Delete knowledge base
+      tags:
+      - Knowledge Bases
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Knowledge base deleted
+  "/api/v1/knowledge_bases/{id}/search":
+    parameters:
+    - name: id
+      in: path
+      description: Knowledge base ID
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Semantic search
+      tags:
+      - Search
+      security:
+      - bearerAuth: []
+      description: Perform semantic search across documents in the knowledge base
+        using vector similarity
+      parameters: []
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/SearchResult"
+                  query:
+                    type: string
+                  total_chunks_searched:
+                    type: integer
+                  knowledge_base_id:
+                    type: integer
+                  search_time_ms:
+                    type: number
+                  request_id:
+                    type: string
+                    format: uuid
+        '422':
+          description: No indexed documents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  example: How do I configure authentication?
+                limit:
+                  type: integer
+                  default: 5
+                  maximum: 20
+                  description: Max results to return
+                min_similarity:
+                  type: number
+                  format: float
+                  description: Minimum similarity threshold (0-1)
+              required:
+              - query
+  "/api/v1/knowledge_bases/{id}/ask":
+    parameters:
+    - name: id
+      in: path
+      description: Knowledge base ID
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: RAG Question Answering
+      tags:
+      - Search
+      security:
+      - bearerAuth: []
+      description: Ask a question and get an AI-generated answer based on knowledge
+        base content (RAG)
+      parameters: []
+      responses:
+        '200':
+          description: Answer generated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RagResponse"
+        '422':
+          description: No indexed documents or question validation failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question:
+                  type: string
+                  example: What is the recommended way to handle errors?
+                num_chunks:
+                  type: integer
+                  default: 5
+                  maximum: 10
+                  description: Context chunks to use
+                include_sources:
+                  type: boolean
+                  default: true
+                  description: Include source citations
+              required:
+              - question
+servers:
+- url: http://localhost:3000
+  description: Development server
+- url: https://api.example.com
+  description: Production server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/v1/auth/login
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - email
+    KnowledgeBase:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Technical Documentation
+        description:
+          type: string
+          example: Documentation for our tech stack
+        total_documents:
+          type: integer
+          example: 10
+        indexed_documents:
+          type: integer
+          example: 8
+        total_chunks:
+          type: integer
+          example: 150
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Getting Started Guide
+        status:
+          type: string
+          enum:
+          - pending
+          - processing
+          - indexed
+          - failed
+          example: indexed
+        content_preview:
+          type: string
+          example: This guide covers...
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - title
+      - status
+    SearchResult:
+      type: object
+      properties:
+        rank:
+          type: integer
+          example: 1
+        chunk_id:
+          type: integer
+          example: 42
+        content:
+          type: string
+          example: Ruby is a programming language...
+        similarity_score:
+          type: number
+          format: float
+          example: 0.85
+        document_id:
+          type: integer
+          example: 5
+        document_title:
+          type: string
+          example: Ruby Guide
+        chunk_index:
+          type: integer
+          example: 0
+      required:
+      - rank
+      - chunk_id
+      - content
+      - similarity_score
+      - document_id
+    RagResponse:
+      type: object
+      properties:
+        answer:
+          type: string
+          example: Ruby is a dynamic programming language...
+        question:
+          type: string
+          example: What is Ruby?
+        sources:
+          type: array
+          items:
+            "$ref": "#/components/schemas/SourceCitation"
+        knowledge_base_id:
+          type: integer
+          example: 1
+        model:
+          type: string
+          example: llama3.2:3b
+        chunks_used:
+          type: integer
+          example: 3
+        total_chunks_searched:
+          type: integer
+          example: 50
+        processing_time_ms:
+          type: number
+          example: 250.5
+      required:
+      - answer
+      - question
+      - sources
+      - knowledge_base_id
+    SourceCitation:
+      type: object
+      properties:
+        document_id:
+          type: integer
+          example: 5
+        document_title:
+          type: string
+          example: Ruby Guide
+        chunk_id:
+          type: integer
+          example: 42
+        chunk_index:
+          type: integer
+          example: 0
+        content_preview:
+          type: string
+          example: Ruby is a dynamic...
+        similarity_score:
+          type: number
+          format: float
+          example: 0.85
+      required:
+      - document_id
+      - document_title
+      - chunk_id
+      - similarity_score
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: string
+          example:
+          - Email can't be blank
+        request_id:
+          type: string
+          format: uuid
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - error
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+          - ok
+          - degraded
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            api:
+              type: object
+            database:
+              type: object
+            ollama:
+              type: object
+        version:
+          type: object
+          properties:
+            ruby:
+              type: string
+              example: 3.4.8
+            rails:
+              type: string
+              example: 8.0.0
+security:
+- bearerAuth: []
+tags:
+- name: Authentication
+  description: User authentication endpoints
+- name: Health
+  description: Health check endpoints
+- name: Knowledge Bases
+  description: Knowledge base management
+- name: Documents
+  description: Document management and processing
+- name: Search
+  description: Semantic search and RAG Q&A
