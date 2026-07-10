@@ -52,6 +52,9 @@ end
 group :development do
   gem "rubocop-rails-omakase", require: false
   gem "brakeman", require: false
+
+  # Checks Gemfile.lock against the ruby advisory database
+  gem "bundler-audit", require: false
 end
 
 group :test do
