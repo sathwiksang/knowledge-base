@@ -65,7 +65,7 @@ class JwtService
     #   payload = JwtService.decode("eyJhbGci...")
     #   payload[:user_id] # => 42
     def decode(token)
-      decoded = JWT.decode(token, SECRET_KEY, true, { algorithm: ALGORITHM, required_claims: ["exp"] })
+      decoded = JWT.decode(token, SECRET_KEY, true, { algorithm: ALGORITHM, required_claims: [ "exp" ] })
       HashWithIndifferentAccess.new(decoded.first)
     rescue JWT::ExpiredSignature
       raise AuthenticationError, "Token has expired"
