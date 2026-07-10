@@ -11,7 +11,7 @@ RSpec.describe 'Authentication Edge Cases', type: :request do
         # Create a token that expired 1 hour ago
         expired_token = JWT.encode(
           { user_id: user.id, exp: 1.hour.ago.to_i },
-          Rails.application.credentials.secret_key_base,
+          ENV.fetch("JWT_SECRET_KEY"),
           'HS256'
         )
 
@@ -65,7 +65,7 @@ RSpec.describe 'Authentication Edge Cases', type: :request do
       it 'rejects tokens with missing claims' do
         token_without_exp = JWT.encode(
           { user_id: user.id },
-          Rails.application.credentials.secret_key_base,
+          ENV.fetch("JWT_SECRET_KEY"),
           'HS256'
         )
 
