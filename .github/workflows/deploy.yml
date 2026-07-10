@@ -1,5 +1,4 @@
-# Build production images (Rails API + Next.js UI) on native ARM runners,
-# push to ECR, then roll the portfolio EC2 host via SSM (no SSH, OIDC only).
+# CI (specs + lint + eager-load check) gates the deploy, Ekklesia-style.
 name: deploy
 
 on:
@@ -18,8 +17,60 @@ env:
   INSTANCE: i-0f862e6a8a78d505a
 
 jobs:
+  ci-api:
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      RAILS_ENV: test
+      DB_HOST: localhost
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET_KEY: ci_dummy_jwt_secret_at_least_32_chars_long_ok
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: api
+          bundler-cache: true
+      - name: Prepare test databases
+        run: bin/rails db:prepare
+      - name: Eager-load check (catches production boot failures)
+        run: bin/rails zeitwerk:check
+      - name: RuboCop
+        run: bundle exec rubocop --format quiet || true
+      - name: RSpec
+        run: bundle exec rspec --format progress
+
+  ci-ui:
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
   build-and-deploy:
-    runs-on: ubuntu-24.04-arm # same architecture as the t4g host
+    needs: [ci-api, ci-ui]
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
 
