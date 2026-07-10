@@ -203,8 +203,8 @@ GEM
       bigdecimal (>= 3.0)
     ostruct (0.6.3)
     pagy (9.4.0)
-    parallel (1.27.0)
-    parallel_tests (4.10.1)
+    parallel (2.1.0)
+    parallel_tests (5.7.0)
       parallel
     parser (3.3.10.1)
       ast (~> 2.4.1)
@@ -319,11 +319,11 @@ GEM
     rswag-ui (2.17.0)
       actionpack (>= 5.2, < 8.2)
       railties (>= 5.2, < 8.2)
-    rubocop (1.84.1)
+    rubocop (1.88.2)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
       lint_roller (~> 1.1.0)
-      parallel (~> 1.10)
+      parallel (>= 1.10)
       parser (>= 3.3.0.2)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 2.9.3, < 3.0)
@@ -419,7 +419,7 @@ DEPENDENCIES
   oj (~> 3.16)
   ostruct
   pagy (~> 9.0)
-  parallel_tests (~> 4.7)
+  parallel_tests (~> 5.7)
   pg (~> 1.5)
   puma (>= 6.0)
   rack-attack

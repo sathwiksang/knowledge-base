@@ -61,7 +61,7 @@ group :test do
   gem "webmock", "~> 3.23"
   gem "rspec-benchmark", "~> 0.6"
   gem "json_matchers", "~> 0.11"
-  gem "parallel_tests", "~> 4.7"
+  gem "parallel_tests", "~> 5.7"
   gem "test-prof", "~> 1.4"
 end
 
