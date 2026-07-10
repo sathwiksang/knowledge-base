@@ -387,7 +387,7 @@ GEM
     unicode-emoji (4.2.0)
     uri (1.1.1)
     useragent (0.16.11)
-    webmock (3.26.1)
+    webmock (3.26.2)
       addressable (>= 2.8.0)
       crack (>= 0.3.2)
       hashdiff (>= 0.4.0, < 2.0.0)
@@ -445,7 +445,7 @@ DEPENDENCIES
   solid_cache
   solid_queue
   test-prof (~> 1.4)
-  webmock (~> 3.23)
+  webmock (~> 3.26)
 
 RUBY VERSION
    ruby 3.4.8p72
