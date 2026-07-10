@@ -21,6 +21,12 @@ Enterprise knowledge management platform with semantic search, a RAG (retrieval-
 | UI | [`ui/`](ui/) | Next.js, TypeScript, Tailwind CSS |
 | AI | — | Ollama — `llama3.2:3b` for generation, `nomic-embed-text` for embeddings |
 
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — system design, key decisions, data flow
+- [docs/RUNBOOK.md](docs/RUNBOOK.md) — deploys, host access (SSM), failure playbook
+- [docs/SECURITY.md](docs/SECURITY.md) — security posture and uplift backlog
+
 ## Local development
 
 ```bash

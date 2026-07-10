@@ -69,6 +69,28 @@ jobs:
         continue-on-error: true # informational until purity warnings are cleaned up
       - run: npm run build
 
+  security:
+    runs-on: ubuntu-24.04-arm
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: api
+          bundler-cache: true
+      - name: Brakeman (static security analysis)
+        run: bin/brakeman --no-pager
+        continue-on-error: true # informational until findings are triaged
+      - name: bundler-audit (known CVEs)
+        run: bin/bundler-audit
+        continue-on-error: true
+      - name: npm audit (UI, high+)
+        working-directory: ui
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
   build-and-deploy:
     needs: [ci-api, ci-ui]
     runs-on: ubuntu-24.04-arm
