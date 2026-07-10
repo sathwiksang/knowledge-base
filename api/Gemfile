@@ -20,7 +20,7 @@ gem "jwt", "~> 2.8"
 
 # API Essentials
 gem "blueprinter", "~> 1.0"
-gem "pagy", "~> 9.0"
+gem "pagy", "~> 43.6"
 gem "rack-cors"
 gem "rack-attack"
 
