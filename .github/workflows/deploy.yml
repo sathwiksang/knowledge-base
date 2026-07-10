@@ -38,7 +38,7 @@ jobs:
       DB_PASSWORD: postgres
       JWT_SECRET_KEY: ci_dummy_jwt_secret_at_least_32_chars_long_ok
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: api
@@ -58,7 +58,7 @@ jobs:
       run:
         working-directory: ui
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -75,7 +75,7 @@ jobs:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: api
@@ -95,7 +95,7 @@ jobs:
     needs: [ci-api, ci-ui]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Assume AWS deploy role (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
