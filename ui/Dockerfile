@@ -8,7 +8,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+# Rewrite destinations are compiled into the build; bake the internal API URL.
+ARG NEXT_PUBLIC_API_URL=http://knowledge-base-api:80
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 FROM node:22-alpine
