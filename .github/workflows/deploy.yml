@@ -47,8 +47,8 @@ jobs:
         run: bin/rails db:prepare
       - name: Eager-load check (catches production boot failures)
         run: bin/rails zeitwerk:check
-      - name: RuboCop
-        run: bundle exec rubocop --format quiet || true
+      - name: RuboCop (blocking — baseline in .rubocop_todo.yml)
+        run: bundle exec rubocop --format quiet
       - name: RSpec
         run: bundle exec rspec --format progress
 
@@ -83,9 +83,8 @@ jobs:
       - name: Brakeman (static security analysis)
         run: bin/brakeman --no-pager
         continue-on-error: true # informational until findings are triaged
-      - name: bundler-audit (known CVEs)
+      - name: bundler-audit (known CVEs) — blocking
         run: bin/bundler-audit
-        continue-on-error: true
       - name: npm audit (UI, high+)
         working-directory: ui
         run: npm audit --audit-level=high
