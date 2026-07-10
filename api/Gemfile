@@ -29,7 +29,7 @@ gem "neighbor", "~> 0.4"
 gem "httparty", "~> 0.22"
 
 # Utilities
-gem "oj", "~> 3.16"
+gem "oj", "~> 3.17"
 gem "ostruct"
 
 # Logging & Monitoring
