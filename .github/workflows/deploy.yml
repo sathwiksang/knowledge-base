@@ -1,0 +1,71 @@
+# Build production images (Rails API + Next.js UI) on native ARM runners,
+# push to ECR, then roll the portfolio EC2 host via SSM (no SSH, OIDC only).
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC
+  contents: read
+
+concurrency: deploy-kb
+
+env:
+  ECR: 606114586218.dkr.ecr.us-east-1.amazonaws.com
+  INSTANCE: i-0f862e6a8a78d505a
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-24.04-arm # same architecture as the t4g host
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assume AWS deploy role (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::606114586218:role/portfolio-github-deploy
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push API image
+        run: |
+          docker build api \
+            -t $ECR/portfolio/kb-api:${{ github.sha }} -t $ECR/portfolio/kb-api:latest
+          docker push $ECR/portfolio/kb-api:${{ github.sha }}
+          docker push $ECR/portfolio/kb-api:latest
+
+      - name: Build & push UI image
+        run: |
+          docker build ui \
+            -t $ECR/portfolio/kb-ui:${{ github.sha }} -t $ECR/portfolio/kb-ui:latest
+          docker push $ECR/portfolio/kb-ui:${{ github.sha }}
+          docker push $ECR/portfolio/kb-ui:latest
+
+      - name: Roll the host (pull + up) via SSM
+        run: |
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids $INSTANCE \
+            --document-name AWS-RunShellScript \
+            --timeout-seconds 600 \
+            --parameters 'commands=["set -e; cd /opt/portfolio; aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 606114586218.dkr.ecr.us-east-1.amazonaws.com > /dev/null; docker compose pull -q knowledge-base-api knowledge-base-ui; docker compose up -d knowledge-base-api knowledge-base-ui; sleep 25; docker compose ps knowledge-base-api knowledge-base-ui"]' \
+            --query 'Command.CommandId' --output text)
+          for i in $(seq 1 30); do
+            STATUS=$(aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE --query 'Status' --output text)
+            [ "$STATUS" = "Success" ] && break
+            [ "$STATUS" = "Failed" ] && { aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE --query 'StandardErrorContent' --output text; exit 1; }
+            sleep 10
+          done
+          aws ssm get-command-invocation --command-id $CMD_ID --instance-id $INSTANCE --query 'StandardOutputContent' --output text | tail -5
+
+      - name: Verify public endpoints
+        run: |
+          sleep 10
+          curl -sf https://api.sathwiksangeethamproject.dev/api/v1/health
+          curl -sfL -o /dev/null https://kb.sathwiksangeethamproject.dev/
+          curl -sfL -o /dev/null https://kb.sathwiksangeethamproject.dev/documentation
+          echo "knowledge-base healthy"

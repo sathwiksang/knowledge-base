@@ -80,6 +80,8 @@ Rails.application.configure do
     "localhost",
     "127.0.0.1"
   ]
+  # Extra hosts (e.g. internal Docker service name used by the UI's server-side proxy)
+  ENV.fetch("RAILS_ADDITIONAL_HOSTS", "").split(",").reject(&:empty?).each { |h| config.hosts << h }
 
   # Skip DNS rebinding protection for health check endpoints.
   config.host_authorization = { exclude: ->(request) { request.path == "/up" || request.path == "/api/v1/health" } }
