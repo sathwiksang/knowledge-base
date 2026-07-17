@@ -59,7 +59,7 @@ end
 
 group :test do
   gem "simplecov", require: false
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 8.0"
   gem "database_cleaner-active_record"
   gem "webmock", "~> 3.23"
   gem "rspec-benchmark", "~> 0.6"
