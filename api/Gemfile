@@ -4,7 +4,7 @@ ruby "3.4.8"
 
 # Core Rails
 gem "rails", "~> 8.0"
-gem "pg", "~> 1.5"
+gem "pg", "~> 1.7"
 gem "puma", ">= 6.0"
 
 # Background Jobs (Rails 8 default)
@@ -26,14 +26,14 @@ gem "rack-attack"
 
 # Vector Search & AI
 gem "neighbor", "~> 0.4"
-gem "httparty", "~> 0.22"
+gem "httparty", "~> 0.24"
 
 # Utilities
-gem "oj", "~> 3.16"
+gem "oj", "~> 3.17"
 gem "ostruct"
 
 # Logging & Monitoring
-gem "lograge", "~> 0.14"
+gem "lograge", "~> 0.15"
 gem "request_store", "~> 1.7"
 
 # API Documentation
@@ -65,7 +65,7 @@ group :test do
   gem "rspec-benchmark", "~> 0.6"
   gem "json_matchers", "~> 0.11"
   gem "parallel_tests", "~> 5.7"
-  gem "test-prof", "~> 1.4"
+  gem "test-prof", "~> 1.6"
 end
 
 # Bullet removed - doesn't support Rails 8.1 yet
