@@ -25,7 +25,7 @@ gem "rack-cors"
 gem "rack-attack"
 
 # Vector Search & AI
-gem "neighbor", "~> 0.4"
+gem "neighbor", "~> 1.2"
 gem "httparty", "~> 0.22"
 
 # Utilities
