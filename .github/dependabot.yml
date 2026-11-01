@@ -5,12 +5,31 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
   - package-ecosystem: npm
     directory: "/ui"
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Next 16 type-checks through TypeScript's JS API, which 7.0 does not ship.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # eslint-plugin-react (inside eslint-config-next) crashes on ESLint 10.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      # Types follow the Node 22 runtime (node:22-alpine, CI node-version 22).
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
