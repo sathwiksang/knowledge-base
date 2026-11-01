@@ -4,13 +4,17 @@ name: deploy
 on:
   push:
     branches: [main]
+  pull_request: # CI only; the deploy job is skipped
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   id-token: write # OIDC
   contents: read
 
-concurrency: deploy-kb
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-{0}', github.ref) || 'deploy-kb' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   ECR: 606114586218.dkr.ecr.us-east-1.amazonaws.com
@@ -38,7 +42,7 @@ jobs:
       DB_PASSWORD: postgres
       JWT_SECRET_KEY: ci_dummy_jwt_secret_at_least_32_chars_long_ok
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: api
@@ -58,8 +62,8 @@ jobs:
       run:
         working-directory: ui
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -75,7 +79,7 @@ jobs:
       run:
         working-directory: api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: api
@@ -92,9 +96,10 @@ jobs:
 
   build-and-deploy:
     needs: [ci-api, ci-ui]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Assume AWS deploy role (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
